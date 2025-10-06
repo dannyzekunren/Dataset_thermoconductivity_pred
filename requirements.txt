@@ -9,5 +9,9 @@ matplotlib>=3.5.0
 # Materials science
 pymatgen>=2022.0.0
 
+# Optional: Materials Project API (for fetching additional properties)
+# Set MP_API_KEY environment variable to enable
+# mp-api>=0.40.0
+
 # File handling
 pathlib2>=2.3.0; python_version < "3.4"

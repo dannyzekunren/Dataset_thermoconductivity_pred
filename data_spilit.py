@@ -45,21 +45,114 @@ def compute_symmetry_payload(structures: Sequence[Structure]) -> Tuple[List[Stru
     return symmetrized_structs, spacegroup_symbols, spacegroup_numbers
 
 
+def extract_wyckoff_info(structure: Structure) -> Tuple[str, str]:
+    """Extract Wyckoff letters and symbols from a symmetrized structure."""
+    try:
+        wyckoff_symbols = structure.wyckoff_symbols
+        wyckoff_letters = "".join([ws.split("_")[0] for ws in wyckoff_symbols])
+        wyckoff_symbols_str = ",".join(wyckoff_symbols)
+        return wyckoff_letters, wyckoff_symbols_str
+    except:
+        return "", ""
+
+
+def fetch_additional_properties(mp_ids: List[str]) -> pd.DataFrame:
+    """
+    Attempt to fetch additional properties from Materials Project API.
+    Returns a dataframe with mp_id and properties, or None values if unavailable.
+    """
+    properties_dict = {
+        "mp_id": [],
+        "e_above_hull": [],
+        "formation_energy_per_atom": [],
+        "band_gap": [],
+        "total_magnetization": [],
+        "elasticity_elastic_anisotropy": [],
+        "elasticity_K_VRH": [],
+        "elasticity_G_VRH": [],
+    }
+    
+    try:
+        from mp_api.client import MPRester
+        import os
+        
+        api_key = os.environ.get("MP_API_KEY")
+        if not api_key:
+            print("Warning: MP_API_KEY not found in environment. Using None for additional properties.")
+            raise ImportError
+        
+        print("Fetching additional properties from Materials Project API...")
+        with MPRester(api_key) as mpr:
+            docs = mpr.materials.summary.search(
+                material_ids=mp_ids,
+                fields=[
+                    "material_id",
+                    "energy_above_hull",
+                    "formation_energy_per_atom",
+                    "band_gap",
+                    "total_magnetization",
+                    "elasticity.elastic_anisotropy",
+                    "elasticity.K_VRH",
+                    "elasticity.G_VRH",
+                ]
+            )
+            
+            for doc in docs:
+                properties_dict["mp_id"].append(str(doc.material_id))
+                properties_dict["e_above_hull"].append(doc.energy_above_hull if doc.energy_above_hull is not None else np.nan)
+                properties_dict["formation_energy_per_atom"].append(doc.formation_energy_per_atom if doc.formation_energy_per_atom is not None else np.nan)
+                properties_dict["band_gap"].append(doc.band_gap if doc.band_gap is not None else np.nan)
+                properties_dict["total_magnetization"].append(doc.total_magnetization if doc.total_magnetization is not None else np.nan)
+                
+                # Handle elasticity properties which may be None
+                if hasattr(doc, 'elasticity') and doc.elasticity is not None:
+                    properties_dict["elasticity_elastic_anisotropy"].append(doc.elasticity.elastic_anisotropy if hasattr(doc.elasticity, 'elastic_anisotropy') else np.nan)
+                    properties_dict["elasticity_K_VRH"].append(doc.elasticity.K_VRH if hasattr(doc.elasticity, 'K_VRH') else np.nan)
+                    properties_dict["elasticity_G_VRH"].append(doc.elasticity.G_VRH if hasattr(doc.elasticity, 'G_VRH') else np.nan)
+                else:
+                    properties_dict["elasticity_elastic_anisotropy"].append(np.nan)
+                    properties_dict["elasticity_K_VRH"].append(np.nan)
+                    properties_dict["elasticity_G_VRH"].append(np.nan)
+        
+        print(f"Successfully fetched properties for {len(properties_dict['mp_id'])} materials.")
+        
+    except (ImportError, Exception) as e:
+        print(f"Could not fetch additional properties: {e}")
+        print("Using None values for all additional properties.")
+        # Fill with None values for all mp_ids
+        for mp_id in mp_ids:
+            properties_dict["mp_id"].append(mp_id)
+            properties_dict["e_above_hull"].append(None)
+            properties_dict["formation_energy_per_atom"].append(None)
+            properties_dict["band_gap"].append(None)
+            properties_dict["total_magnetization"].append(None)
+            properties_dict["elasticity_elastic_anisotropy"].append(None)
+            properties_dict["elasticity_K_VRH"].append(None)
+            properties_dict["elasticity_G_VRH"].append(None)
+    
+    return pd.DataFrame(properties_dict)
+
+
 def build_filtered_dataframe(
     mp_ids: Sequence[str],
     klat: np.ndarray,
     kc: np.ndarray,
     kp: np.ndarray,
+    structures: Sequence[Structure],
+    symmetrized_structures: Sequence[Structure],
     spacegroup_symbols: Sequence[str],
     spacegroup_numbers: Sequence[int],
 ) -> pd.DataFrame:
-    """Create dataframe of valid entries with log-transformed klat."""
+    """Create dataframe of valid entries with log-transformed klat and structure info."""
     records = []
-    for idx, (mp_id, kl_value, kc_value, kp_value, sg_symbol, sg_number) in enumerate(
-        zip(mp_ids, klat, kc, kp, spacegroup_symbols, spacegroup_numbers)
+    for idx, (mp_id, kl_value, kc_value, kp_value, struct, sym_struct, sg_symbol, sg_number) in enumerate(
+        zip(mp_ids, klat, kc, kp, structures, symmetrized_structures, spacegroup_symbols, spacegroup_numbers)
     ):
         if not np.isfinite(kl_value) or kl_value <= 0 or kl_value > 1e5:
             continue
+        
+        wyckoff_letters, wyckoff_symbols = extract_wyckoff_info(sym_struct)
+        
         records.append(
             {
                 "original_index": idx,
@@ -67,8 +160,12 @@ def build_filtered_dataframe(
                 "klat": float(kl_value),
                 "kc": float(kc_value),
                 "kp": float(kp_value),
+                "structure": struct,  # Original structure
+                "symmetrized_structure": sym_struct,  # Symmetrized structure
                 "spacegroup_symbol": sg_symbol,
                 "spacegroup_number": int(sg_number),
+                "wyckoff_letters": wyckoff_letters,
+                "wyckoff_symbols": wyckoff_symbols,
             }
         )
 
@@ -314,29 +411,81 @@ def main() -> None:
         pymatgen_dict_structures_not_sym = json.load(handle)
 
     raw_structures = [Structure.from_dict(s) for s in pymatgen_dict_structures_not_sym]
-    pymatgen_structures, spacegroup_symbols, spacegroup_numbers = compute_symmetry_payload(raw_structures)
+    symmetrized_structures, spacegroup_symbols, spacegroup_numbers = compute_symmetry_payload(raw_structures)
 
     df = build_filtered_dataframe(
         mp_ids=mp_ids,
         klat=klat,
         kc=kc,
         kp=kp,
+        structures=raw_structures,
+        symmetrized_structures=symmetrized_structures,
         spacegroup_symbols=spacegroup_symbols,
         spacegroup_numbers=spacegroup_numbers,
     )
 
     print(f"Filtered dataset contains {len(df)} samples (from {len(mp_ids)} original entries).")
+    
+    # Fetch additional properties from Materials Project API
+    unique_mp_ids = df["mp_id"].unique().tolist()
+    additional_props_df = fetch_additional_properties(unique_mp_ids)
+    
+    # Merge additional properties with main dataframe
+    df = df.merge(additional_props_df, on="mp_id", how="left")
+    
+    print(f"Merged additional properties for {len(df)} samples.")
 
     # Standard random 80/20 split
     train_mask_random, test_mask_random = build_random_split(df)
     random_split = {
         "split_type": "random_80_20",
+        # X data (features)
+        "X_train": {
+            "mp_ids": df.loc[train_mask_random, "mp_id"].tolist(),
+            "structures": df.loc[train_mask_random, "structure"].tolist(),
+            "symmetrized_structures": df.loc[train_mask_random, "symmetrized_structure"].tolist(),
+            "wyckoff_letters": df.loc[train_mask_random, "wyckoff_letters"].tolist(),
+            "wyckoff_symbols": df.loc[train_mask_random, "wyckoff_symbols"].tolist(),
+            "spacegroup_symbols": df.loc[train_mask_random, "spacegroup_symbol"].tolist(),
+            "spacegroup_numbers": df.loc[train_mask_random, "spacegroup_number"].tolist(),
+            "kc": df.loc[train_mask_random, "kc"].to_numpy(),
+            "kp": df.loc[train_mask_random, "kp"].to_numpy(),
+            "e_above_hull": df.loc[train_mask_random, "e_above_hull"].tolist(),
+            "formation_energy_per_atom": df.loc[train_mask_random, "formation_energy_per_atom"].tolist(),
+            "band_gap": df.loc[train_mask_random, "band_gap"].tolist(),
+            "total_magnetization": df.loc[train_mask_random, "total_magnetization"].tolist(),
+            "elasticity_elastic_anisotropy": df.loc[train_mask_random, "elasticity_elastic_anisotropy"].tolist(),
+            "elasticity_K_VRH": df.loc[train_mask_random, "elasticity_K_VRH"].tolist(),
+            "elasticity_G_VRH": df.loc[train_mask_random, "elasticity_G_VRH"].tolist(),
+        },
+        "X_test": {
+            "mp_ids": df.loc[test_mask_random, "mp_id"].tolist(),
+            "structures": df.loc[test_mask_random, "structure"].tolist(),
+            "symmetrized_structures": df.loc[test_mask_random, "symmetrized_structure"].tolist(),
+            "wyckoff_letters": df.loc[test_mask_random, "wyckoff_letters"].tolist(),
+            "wyckoff_symbols": df.loc[test_mask_random, "wyckoff_symbols"].tolist(),
+            "spacegroup_symbols": df.loc[test_mask_random, "spacegroup_symbol"].tolist(),
+            "spacegroup_numbers": df.loc[test_mask_random, "spacegroup_number"].tolist(),
+            "kc": df.loc[test_mask_random, "kc"].to_numpy(),
+            "kp": df.loc[test_mask_random, "kp"].to_numpy(),
+            "e_above_hull": df.loc[test_mask_random, "e_above_hull"].tolist(),
+            "formation_energy_per_atom": df.loc[test_mask_random, "formation_energy_per_atom"].tolist(),
+            "band_gap": df.loc[test_mask_random, "band_gap"].tolist(),
+            "total_magnetization": df.loc[test_mask_random, "total_magnetization"].tolist(),
+            "elasticity_elastic_anisotropy": df.loc[test_mask_random, "elasticity_elastic_anisotropy"].tolist(),
+            "elasticity_K_VRH": df.loc[test_mask_random, "elasticity_K_VRH"].tolist(),
+            "elasticity_G_VRH": df.loc[test_mask_random, "elasticity_G_VRH"].tolist(),
+        },
+        # Y data (targets) - kept for backward compatibility
+        "y_train_log_klat": df.loc[train_mask_random, "log_klat"].to_numpy(),
+        "y_test_log_klat": df.loc[test_mask_random, "log_klat"].to_numpy(),
+        "y_train_klat": df.loc[train_mask_random, "klat"].to_numpy(),
+        "y_test_klat": df.loc[test_mask_random, "klat"].to_numpy(),
+        # Legacy fields
         "train_mp_ids": df.loc[train_mask_random, "mp_id"].tolist(),
         "test_mp_ids": df.loc[test_mask_random, "mp_id"].tolist(),
         "train_original_indices": df.loc[train_mask_random, "original_index"].to_numpy(),
         "test_original_indices": df.loc[test_mask_random, "original_index"].to_numpy(),
-        "y_train_log_klat": df.loc[train_mask_random, "log_klat"].to_numpy(),
-        "y_test_log_klat": df.loc[test_mask_random, "log_klat"].to_numpy(),
     }
     dump_split_payload(random_split, Path("processed_splits/random_split.pkl"))
 
@@ -344,14 +493,56 @@ def main() -> None:
     train_mask_sg, test_mask_sg, train_groups, test_groups = split_by_space_group(df)
     space_group_split = {
         "split_type": "space_group_disjoint",
+        # X data (features)
+        "X_train": {
+            "mp_ids": df.loc[train_mask_sg, "mp_id"].tolist(),
+            "structures": df.loc[train_mask_sg, "structure"].tolist(),
+            "symmetrized_structures": df.loc[train_mask_sg, "symmetrized_structure"].tolist(),
+            "wyckoff_letters": df.loc[train_mask_sg, "wyckoff_letters"].tolist(),
+            "wyckoff_symbols": df.loc[train_mask_sg, "wyckoff_symbols"].tolist(),
+            "spacegroup_symbols": df.loc[train_mask_sg, "spacegroup_symbol"].tolist(),
+            "spacegroup_numbers": df.loc[train_mask_sg, "spacegroup_number"].tolist(),
+            "kc": df.loc[train_mask_sg, "kc"].to_numpy(),
+            "kp": df.loc[train_mask_sg, "kp"].to_numpy(),
+            "e_above_hull": df.loc[train_mask_sg, "e_above_hull"].tolist(),
+            "formation_energy_per_atom": df.loc[train_mask_sg, "formation_energy_per_atom"].tolist(),
+            "band_gap": df.loc[train_mask_sg, "band_gap"].tolist(),
+            "total_magnetization": df.loc[train_mask_sg, "total_magnetization"].tolist(),
+            "elasticity_elastic_anisotropy": df.loc[train_mask_sg, "elasticity_elastic_anisotropy"].tolist(),
+            "elasticity_K_VRH": df.loc[train_mask_sg, "elasticity_K_VRH"].tolist(),
+            "elasticity_G_VRH": df.loc[train_mask_sg, "elasticity_G_VRH"].tolist(),
+        },
+        "X_test": {
+            "mp_ids": df.loc[test_mask_sg, "mp_id"].tolist(),
+            "structures": df.loc[test_mask_sg, "structure"].tolist(),
+            "symmetrized_structures": df.loc[test_mask_sg, "symmetrized_structure"].tolist(),
+            "wyckoff_letters": df.loc[test_mask_sg, "wyckoff_letters"].tolist(),
+            "wyckoff_symbols": df.loc[test_mask_sg, "wyckoff_symbols"].tolist(),
+            "spacegroup_symbols": df.loc[test_mask_sg, "spacegroup_symbol"].tolist(),
+            "spacegroup_numbers": df.loc[test_mask_sg, "spacegroup_number"].tolist(),
+            "kc": df.loc[test_mask_sg, "kc"].to_numpy(),
+            "kp": df.loc[test_mask_sg, "kp"].to_numpy(),
+            "e_above_hull": df.loc[test_mask_sg, "e_above_hull"].tolist(),
+            "formation_energy_per_atom": df.loc[test_mask_sg, "formation_energy_per_atom"].tolist(),
+            "band_gap": df.loc[test_mask_sg, "band_gap"].tolist(),
+            "total_magnetization": df.loc[test_mask_sg, "total_magnetization"].tolist(),
+            "elasticity_elastic_anisotropy": df.loc[test_mask_sg, "elasticity_elastic_anisotropy"].tolist(),
+            "elasticity_K_VRH": df.loc[test_mask_sg, "elasticity_K_VRH"].tolist(),
+            "elasticity_G_VRH": df.loc[test_mask_sg, "elasticity_G_VRH"].tolist(),
+        },
+        # Y data (targets)
+        "y_train_log_klat": df.loc[train_mask_sg, "log_klat"].to_numpy(),
+        "y_test_log_klat": df.loc[test_mask_sg, "log_klat"].to_numpy(),
+        "y_train_klat": df.loc[train_mask_sg, "klat"].to_numpy(),
+        "y_test_klat": df.loc[test_mask_sg, "klat"].to_numpy(),
+        # Space group information
+        "train_space_groups": sorted(train_groups),
+        "test_space_groups": sorted(test_groups),
+        # Legacy fields
         "train_mp_ids": df.loc[train_mask_sg, "mp_id"].tolist(),
         "test_mp_ids": df.loc[test_mask_sg, "mp_id"].tolist(),
         "train_original_indices": df.loc[train_mask_sg, "original_index"].to_numpy(),
         "test_original_indices": df.loc[test_mask_sg, "original_index"].to_numpy(),
-        "y_train_log_klat": df.loc[train_mask_sg, "log_klat"].to_numpy(),
-        "y_test_log_klat": df.loc[test_mask_sg, "log_klat"].to_numpy(),
-        "train_space_groups": sorted(train_groups),
-        "test_space_groups": sorted(test_groups),
     }
     dump_split_payload(space_group_split, Path("processed_splits/space_group_split.pkl"))
 
@@ -365,14 +556,56 @@ def main() -> None:
     train_mask_ood, test_mask_ood, train_threshold, test_threshold = build_ood_split(df)
     ood_split = {
         "split_type": "ood_low_klat",
+        # X data (features)
+        "X_train": {
+            "mp_ids": df.loc[train_mask_ood, "mp_id"].tolist(),
+            "structures": df.loc[train_mask_ood, "structure"].tolist(),
+            "symmetrized_structures": df.loc[train_mask_ood, "symmetrized_structure"].tolist(),
+            "wyckoff_letters": df.loc[train_mask_ood, "wyckoff_letters"].tolist(),
+            "wyckoff_symbols": df.loc[train_mask_ood, "wyckoff_symbols"].tolist(),
+            "spacegroup_symbols": df.loc[train_mask_ood, "spacegroup_symbol"].tolist(),
+            "spacegroup_numbers": df.loc[train_mask_ood, "spacegroup_number"].tolist(),
+            "kc": df.loc[train_mask_ood, "kc"].to_numpy(),
+            "kp": df.loc[train_mask_ood, "kp"].to_numpy(),
+            "e_above_hull": df.loc[train_mask_ood, "e_above_hull"].tolist(),
+            "formation_energy_per_atom": df.loc[train_mask_ood, "formation_energy_per_atom"].tolist(),
+            "band_gap": df.loc[train_mask_ood, "band_gap"].tolist(),
+            "total_magnetization": df.loc[train_mask_ood, "total_magnetization"].tolist(),
+            "elasticity_elastic_anisotropy": df.loc[train_mask_ood, "elasticity_elastic_anisotropy"].tolist(),
+            "elasticity_K_VRH": df.loc[train_mask_ood, "elasticity_K_VRH"].tolist(),
+            "elasticity_G_VRH": df.loc[train_mask_ood, "elasticity_G_VRH"].tolist(),
+        },
+        "X_test": {
+            "mp_ids": df.loc[test_mask_ood, "mp_id"].tolist(),
+            "structures": df.loc[test_mask_ood, "structure"].tolist(),
+            "symmetrized_structures": df.loc[test_mask_ood, "symmetrized_structure"].tolist(),
+            "wyckoff_letters": df.loc[test_mask_ood, "wyckoff_letters"].tolist(),
+            "wyckoff_symbols": df.loc[test_mask_ood, "wyckoff_symbols"].tolist(),
+            "spacegroup_symbols": df.loc[test_mask_ood, "spacegroup_symbol"].tolist(),
+            "spacegroup_numbers": df.loc[test_mask_ood, "spacegroup_number"].tolist(),
+            "kc": df.loc[test_mask_ood, "kc"].to_numpy(),
+            "kp": df.loc[test_mask_ood, "kp"].to_numpy(),
+            "e_above_hull": df.loc[test_mask_ood, "e_above_hull"].tolist(),
+            "formation_energy_per_atom": df.loc[test_mask_ood, "formation_energy_per_atom"].tolist(),
+            "band_gap": df.loc[test_mask_ood, "band_gap"].tolist(),
+            "total_magnetization": df.loc[test_mask_ood, "total_magnetization"].tolist(),
+            "elasticity_elastic_anisotropy": df.loc[test_mask_ood, "elasticity_elastic_anisotropy"].tolist(),
+            "elasticity_K_VRH": df.loc[test_mask_ood, "elasticity_K_VRH"].tolist(),
+            "elasticity_G_VRH": df.loc[test_mask_ood, "elasticity_G_VRH"].tolist(),
+        },
+        # Y data (targets)
+        "y_train_log_klat": df.loc[train_mask_ood, "log_klat"].to_numpy(),
+        "y_test_log_klat": df.loc[test_mask_ood, "log_klat"].to_numpy(),
+        "y_train_klat": df.loc[train_mask_ood, "klat"].to_numpy(),
+        "y_test_klat": df.loc[test_mask_ood, "klat"].to_numpy(),
+        # Threshold information
+        "train_threshold": train_threshold,
+        "test_threshold": test_threshold,
+        # Legacy fields
         "train_mp_ids": df.loc[train_mask_ood, "mp_id"].tolist(),
         "test_mp_ids": df.loc[test_mask_ood, "mp_id"].tolist(),
         "train_original_indices": df.loc[train_mask_ood, "original_index"].to_numpy(),
         "test_original_indices": df.loc[test_mask_ood, "original_index"].to_numpy(),
-        "y_train_log_klat": df.loc[train_mask_ood, "log_klat"].to_numpy(),
-        "y_test_log_klat": df.loc[test_mask_ood, "log_klat"].to_numpy(),
-        "train_threshold": train_threshold,
-        "test_threshold": test_threshold,
     }
     dump_split_payload(ood_split, Path("processed_splits/ood_split.pkl"))
 
