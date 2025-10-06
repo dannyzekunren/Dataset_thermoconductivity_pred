@@ -102,11 +102,32 @@ print(structure.density)
 
 ## Output Files
 
-- `processed_splits/random_split.pkl`: Random baseline
-- `processed_splits/space_group_split.pkl`: Space group disjoint
-- `processed_splits/ood_split.pkl`: Out-of-distribution
-- `figures/space_group_split_highlight.png`: Space group visualization
-- `figures/ood_klat_histogram.png`: OOD histogram (log scale)
+### Split Data
+- `processed_splits/random_split.pkl`: Random 80/20 baseline split
+- `processed_splits/space_group_split.pkl`: Space group disjoint split
+- `processed_splits/ood_split.pkl`: Out-of-distribution split
+
+### Visualizations
+
+#### Space Group Split Visualization
+![Space Group Split](figures/space_group_split_highlight.png)
+
+Two horizontal rectangles showing:
+- **Top**: Train space groups highlighted in color (grayed out = test only)
+- **Bottom**: Test space groups highlighted in color (grayed out = train only)
+- **X-axis**: Selected space group labels (showing ~20 labels to avoid overlap)
+- Each colored segment represents a different space group, with width proportional to sample count
+- Largest groups and evenly spaced groups are labeled for clarity
+
+#### OOD klattice Histogram
+![OOD Histogram](figures/ood_klat_histogram.png)
+
+Overlaid histogram showing:
+- **X-axis**: log(k_lattice) with 50 bins for better resolution
+- **Blue**: Training set distribution (klat > 0.8)
+- **Red**: Test set distribution (klat < 1.0)
+- **Grid**: Added for easier reading
+- Clearly shows test set concentrated at lower log(klat) values (< 0.4) and train set at higher values (> 0)
 
 ## Key Features
 
