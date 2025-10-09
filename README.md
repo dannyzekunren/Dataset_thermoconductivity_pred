@@ -129,6 +129,58 @@ Overlaid histogram showing:
 - **Grid**: Added for easier reading
 - Clearly shows test set concentrated at lower log(klat) values (< 0.4) and train set at higher values (> 0)
 
+## Assessment Metrics
+
+### Traditional Metrics
+- **R² (Coefficient of Determination)**: Standard regression performance
+- **MAE (Mean Absolute Error)**: Average absolute prediction error
+
+### Specialized Metrics
+
+#### Low-κ Weighted Log-MAE (κ-WLMAE)
+A specialized metric designed for thermal conductivity prediction that emphasizes accuracy in the low thermal conductivity regime:
+
+**Formula:**
+```
+κ-WLMAE = Σᵢ w(yᵢ) |log(ŷᵢ) - log(yᵢ)| / Σᵢ w(yᵢ)
+```
+
+**Weight Function:**
+```
+w(y) = min(1, (2/y)^p)
+```
+
+**Parameters:**
+- **p = 2** (default): Mild-moderate emphasis on low-κ materials
+- **p > 2**: Stronger focus on materials with κ < 2
+- **log_base**: Natural log ('e') or base-10 ('10')
+
+**Implementation:**
+```python
+import numpy as np
+
+def kappa_wlmae(y_true, y_pred, p=2, log_base='e', eps=1e-12):
+    y_true = np.asarray(y_true, dtype=float)
+    y_pred = np.asarray(y_pred, dtype=float)
+    # weights: full weight <=2; decay as (2/y)^p above 2
+    w = np.minimum(1.0, (2.0 / np.maximum(y_true, eps))**p)
+    # log error (natural or base-10)
+    if log_base == 'e':
+        err = np.abs(np.log(np.maximum(y_pred, eps)) - np.log(np.maximum(y_true, eps)))
+    elif log_base == '10':
+        err = np.abs(np.log10(np.maximum(y_pred, eps)) - np.log10(np.maximum(y_true, eps)))
+    else:
+        raise ValueError("log_base must be 'e' or '10'")
+    return np.sum(w * err) / np.sum(w)
+```
+
+**Why κ-WLMAE:**
+- **Unit-agnostic**: Multiplicative error measurement (|log ŷ - log y| ≈ relative error)
+- **Low-κ focused**: Samples with κ ≤ 2 get full weight; above 2, weight decays smoothly
+- **Robust**: Handles the wide range of thermal conductivity values 
+- **Simple**: One hyperparameter (p) controls emphasis on low-κ materials
+- **No discontinuities**: Smooth weight function, easy to implement and explain
+
 ## Key Features
 
 - ✅ Three split strategies: random baseline, space group disjoint, OOD
@@ -138,6 +190,7 @@ Overlaid histogram showing:
 - ✅ Optional Materials Project API integration
 - ✅ Pymatgen Structure objects for analysis
 - ✅ Reproducible with fixed random seeds
+- ✅ Specialized assessment metrics for thermal conductivity prediction
 
 ## Notes
 
