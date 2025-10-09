@@ -75,6 +75,7 @@ python data_spilit.py
 ### Load Data
 ```python
 import pickle
+import pandas as pd
 
 # Load any split
 with open('processed_splits/random_split.pkl', 'rb') as f:
@@ -85,10 +86,12 @@ X_train = data['X_train']
 structures = X_train['structures']  # Pymatgen Structure objects
 wyckoff = X_train['wyckoff_letters']
 band_gaps = X_train['band_gap']  # None if no API key
+df_X_train = pd.DataFrame(X_train)
 
 # Access targets
 y_train = data['y_train_log_klat']  # Log-transformed
 y_train_original = data['y_train_klat']  # Original values
+df_y_train = pd.DataFrame(y_train)
 ```
 
 ### Example: Using Structures
