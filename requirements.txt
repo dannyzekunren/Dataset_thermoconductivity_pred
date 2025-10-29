@@ -1,0 +1,17 @@
+torch~=2.2.2
+matplotlib~=3.10.7
+numpy~=1.25.0
+tqdm~=4.66.2
+sympy~=1.11.1
+PyYAML~=6.0.3
+scikit-learn~=1.7.2
+pandas~=2.3.3
+setuptools~=80.9.0
+pymatgen~=2023.9.25
+dscribe~=2.1.2
+matminer~=0.9.3
+pyxtal~=1.1.1
+wandb~=0.22.2
+pykan~=0.2.8
+joblib~=1.5.2
+xgboost~=3.0.5

@@ -3,8 +3,8 @@
 """
 Author: Wang Jianghai @NTU
 Contact: jianghai001@e.ntu.edu.sg
-Date: 2025-xx-xx
-Description: [Brief description of the script's purpose]
+Date: 2025-10-29
+Description: Train XGBoost model for thermal conductivity prediction
 """
 import pickle
 import numpy as np
