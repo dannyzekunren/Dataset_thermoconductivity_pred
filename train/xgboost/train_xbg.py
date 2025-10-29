@@ -24,7 +24,6 @@ with open("dataset/featurized_data/ood_scaled_full_soap_bin_matrix_sym_logk.pkl"
 
 X_train = dataset['train_input']
 y_train = dataset['train_label']
-print(X_train.shape)
 X_test = dataset['test_input']
 y_test = dataset['test_label']
 
