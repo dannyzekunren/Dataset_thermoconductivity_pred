@@ -77,7 +77,7 @@ def setup_device():
 |-------|----------|-----------|----------------|--------|-------------|
 | Ridge Baseline | 50 | 0.527 | 0.489 | -4.456 | Reference |
 | Random Forest | 50 | 0.633 | 0.577 | -6.356 | Ensemble |
-| Structure Reconstruction | 50 | 0.639 | 0.598 | -5.703 | Transfer Learning |
+| Structure Reconstruction | 50 | 0.639 | 0.598 | -5.703 | Architecture |
 | Wyckoff BNN | 278 | 0.716 | -0.026 | -4.737 | Sparse Features |
 | **🏆 Attention Hybrid** | **50+228** | **0.746** | **0.672** | **-4.141** | **🚀 BREAKTHROUGH** |
 

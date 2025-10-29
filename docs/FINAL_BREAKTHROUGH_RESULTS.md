@@ -23,7 +23,7 @@
 - **Improvement**: +4.2% over pure Wyckoff approach
 - **Why**: Intelligent fusion of dense + sparse features
 
-#### **2. Space Group Split (Cross-System Transfer)** 🔬  
+#### **2. Space Group Split (Cross-System Generalization)** 🔬  
 - **Excellent Performance**: R² = 0.672 (vs 0.598 Structure Recon)
 - **Improvement**: +12.4% over architecture-only approach
 - **Why**: Combines architectural innovation with feature richness
@@ -43,7 +43,7 @@
 - **Result**: Best overall performance across splits
 
 ### **2. Feature + Architecture Synergy** ✅
-- **Pure Features**: Wyckoff BNN (good IID, poor transfer)
+- **Pure Features**: Wyckoff BNN (good IID, poor generalization)
 - **Pure Architecture**: Structure Recon BNN (balanced but limited)
 - **Hybrid Approach**: Attention fusion (best of both worlds)
 
@@ -72,7 +72,7 @@ Structure Recon:  0.598
 Random Forest:    0.577
 Wyckoff BNN:     -0.026 ❌
 ```
-**Conclusion**: Cross-system transfer needs both smart architecture AND rich features
+**Conclusion**: Cross-system generalization needs both smart architecture AND rich features
 
 ### **OOD Split: Universal Challenge** 🔄
 ```
@@ -96,7 +96,7 @@ Structure Recon: -5.703 ❌
 
 #### **Scenario 2: Different Crystal Systems**  
 - **Use**: **Attention Hybrid BNN** (R² = 0.672)
-- **Confidence**: High - excellent cross-system transfer
+- **Confidence**: High - excellent cross-system generalization
 - **Advantage**: Better than pure architecture or feature approaches
 
 #### **Scenario 3: Unknown/OOD Materials**
@@ -114,14 +114,14 @@ Structure Recon: -5.703 ❌
 
 ### **Model Performance:**
 - **Best Random Split**: 0.746 R² (state-of-the-art)
-- **Best Space Group Split**: 0.672 R² (excellent transfer)
+- **Best Space Group Split**: 0.672 R² (excellent generalization)
 - **Most Balanced**: 2/3 positive R² splits
 - **Innovation**: Attention-based sparse feature fusion
 
 ### **Scientific Contributions:**
 1. **Sparsity Solution**: Attention mechanisms for sparse crystallographic features
 2. **Feature Fusion**: Optimal combination of dense + sparse representations  
-3. **Transfer Learning**: Architecture + features for cross-domain generalization
+3. **Cross-Domain Generalization**: Architecture + features for robust performance
 4. **Methodological**: Proper validation without data leakage
 
 ---
@@ -158,7 +158,7 @@ The **Attention Hybrid BNN** represents a **major breakthrough** in materials ma
 ### **🔬 Scientific Impact:**
 - **Novel Architecture**: Attention for materials property prediction
 - **Methodological Innovation**: Sparse crystallographic feature handling
-- **Transfer Learning**: Cross-crystal system generalization
+- **Cross-Domain Generalization**: Cross-crystal system performance
 - **Validation Rigor**: Corrected data leakage issues
 
 ### **🎯 Your Key Insight:**
