@@ -61,7 +61,7 @@ The feature extraction is done by the script: `feature/featurization.py`.
 
 
 ### Evaluation
-To evaluate the models, run each script in the respective training folder to train a model from scratch. The evaluation metrics include Mean Absolute Error (MAE) and R-squared ($R^2$) on three different data splits: Random, Space Group (SPG), and Out-Of-Distribution (OOD). <mark>Remember to change the split set when evaluating different split.</mark>
+To evaluate the models, run each script in the respective training folder to train a model from scratch. The evaluation metrics include Mean Absolute Error (MAE) and R-squared ($R^2$) on three different data splits: Random, Space Group (SPG), and Out-Of-Distribution (OOD). <mark>Remember to change the path when evaluating different split.</mark>
 
 Alternatively, you can load models from the `models` directory to reproduce the results directly.
 
