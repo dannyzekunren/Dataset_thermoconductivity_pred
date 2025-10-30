@@ -113,11 +113,8 @@ print("Final Test R² (log y):", r2)
 ```
 
 ### Getting Started
-To get started with the project, clone the repository and install the required dependencies. It is recommended to create a virtual environment for Python package management.
 
 ```bash
-git clone https://github.com/yourusername/thermal-conductivity-prediction.git
-cd thermal-conductivity-prediction
 pip install -r requirements.txt
 ```
 
@@ -126,8 +123,8 @@ pip install -r requirements.txt
 thermal-conductivity-prediction/
 │
 ├── dataset/                   # Contains the dataset used for training and testing
-│   ├── featurized_data/      # Featurized data files
-│   └── raw_data/             # Raw data files
+│   ├── featurized_data/       # Featurized data files
+│   └── raw_data/              # Raw data files
 │
 ├── feature/                   # Feature extraction scripts
 │   └── featurization.py       # Script for extracting features from the dataset
