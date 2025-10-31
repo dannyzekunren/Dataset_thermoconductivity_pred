@@ -1,0 +1,21 @@
+======================================================================
+PREDICTION SUMMARY
+======================================================================
+CSV File:         /Dataset_thermoconductivity_pred/processed_splits/random_test_data.csv
+Structures Dir:   /Dataset_thermoconductivity_pred/processed_splits
+Output Dir:       predictions
+
+Total samples:    1403
+Successful:       1403
+Failed:           0
+
+Prediction Statistics:
+  Mean:  0.9127
+  Std:   1.3898
+  Min:   -2.7935
+  Max:   7.9233
+
+Error Metrics (vs Ground Truth):
+  MAE:        0.3671
+  R²:         0.7756
+======================================================================

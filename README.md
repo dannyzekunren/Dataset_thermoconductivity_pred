@@ -1,203 +1,330 @@
-# Thermal Conductivity Dataset Splits
+# ALIEGNN: Atomistic Line Graph Equivariant Neural Network
 
-This repository contains three distinct train/test splits for thermal conductivity prediction models, generated from Materials Project data.
+A deep learning model for predicting material properties based on atomic structures. ALIEGNN incorporates equivariant neural network principles with line graph representations for improved performance on crystalline materials.
 
-## Overview
+## Model Performance
 
-Three splits are provided:
+| Split Type | MAE ↓ | R² ↑ |
+|------------|-------|------|
+| Random | 0.379 | 0.762 |
+| Space Group | 0.512 | 0.697 |
+| OOD | 1.245 | -3.595 |
+| **Average MAE** | **0.712** | - |
 
-1. **Random 80/20 Split**: Standard baseline for comparison
-2. **Space Group Disjoint Split**: Tests generalization to unseen crystal structures
-3. **Out-of-Distribution Split**: Tests performance on low thermal conductivity materials
+---
 
-## Dataset
+## Table of Contents
 
-- **Total Samples**: 6,966 (filtered from 6,967 original entries)
-- **Filtering**: Removed samples where `klat > 10^5`, `klat <= 0`, or non-finite values
-- **Target**: `log(klat)` for all splits
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Training](#training)
+- [Prediction](#prediction)
+- [Troubleshooting](#troubleshooting)
 
-## Data Structure
-
-Each split pickle file contains:
-
-### Features (X_train, X_test)
-- **Structures**: Original and symmetrized pymatgen Structure objects
-- **Crystallography**: Wyckoff positions, space group symbols/numbers
-- **Thermal**: Crystal (kc) and phonon (kp) thermal conductivity components
-- **Properties**: Formation energy, band gap, magnetization, elasticity (if MP API key provided)
-
-### Targets (Y)
-- **y_train_log_klat**, **y_test_log_klat**: Log-transformed thermal conductivity
-- **y_train_klat**, **y_test_klat**: Original thermal conductivity values
-
-## Split Details
-
-### 1. Random 80/20 Split (Baseline)
-- **Train**: 5,563 samples (79.9%)
-- **Test**: 1,403 samples (20.1%)
-- **Purpose**: Standard baseline for comparison
-
-### 2. Space Group Disjoint Split
-- **Train**: 5,573 samples (80.0%), 139 space groups
-- **Test**: 1,393 samples (20.0%), 31 space groups
-- **Purpose**: Tests generalization to unseen crystal structures
-- **Key**: Zero space group overlap between train and test
-
-### 3. Out-of-Distribution Split
-- **Train**: 5,042 samples (72.4%), klat > 0.8
-- **Test**: 1,914 samples (27.5%), klat < 1.0
-- **Purpose**: Tests performance on low thermal conductivity materials
-- **Key**: Clean separation with gap region (0.8 < klat < 1.0)
+---
 
 ## Installation
 
+### Prerequisites
+
+- Python 3.8 or later
+- CUDA 11.8 (for GPU support)
+- Conda or Miniconda
+
+### Step 1: Create Conda Environment
+
 ```bash
-pip install -r requirements.txt
+# Create and activate environment
+conda create -n aliegnn python=3.8 -y
+conda activate aliegnn
+
+# Load CUDA modules (if on HPC cluster)
+module load cuda/11.8
+module load nvhpc/25.3
 ```
 
-### Optional: Materials Project API
+### Step 2: Install PyTorch with CUDA Support
 
-To fetch additional properties (formation energy, band gap, elasticity):
+**IMPORTANT:** Install PyTorch BEFORE installing ALIEGNN.
 
-1. Get API key from [Materials Project](https://materialsproject.org/api)
-2. Set environment variable: `export MP_API_KEY="your_key"`
-3. Install: `pip install mp-api>=0.40.0`
-
-Without API key, additional properties will be `None` (structures still available).
-
-## Usage
-
-### Generate Splits
 ```bash
-python data_spilit.py
+# Install uv package manager
+pip install uv
+
+# Install PyTorch with CUDA 11.8
+uv pip install torch==2.4.1+cu118 torchvision==0.19.1+cu118 \
+    --index-url https://download.pytorch.org/whl/cu118
+
+# Install PyG extensions
+uv pip install pyg_lib torch_scatter torch_sparse torch_cluster torch_spline_conv \
+    -f https://data.pyg.org/whl/torch-2.4.1+cu118.html
 ```
 
-### Load Data
-```python
-import pickle
-import pandas as pd
+### Step 3: Install DGL with CUDA Support
 
-# Load any split
-with open('processed_splits/random_split.pkl', 'rb') as f:
-    data = pickle.load(f)
-
-# Access features
-X_train = data['X_train']
-structures = X_train['structures']  # Pymatgen Structure objects
-wyckoff = X_train['wyckoff_letters']
-band_gaps = X_train['band_gap']  # None if no API key
-df_X_train = pd.DataFrame(X_train)
-
-# Access targets
-y_train = data['y_train_log_klat']  # Log-transformed
-y_train_original = data['y_train_klat']  # Original values
-df_y_train = pd.DataFrame(y_train)
+```bash
+conda install -c dglteam/label/th24_cu118 dgl -y
 ```
 
-### Example: Using Structures
-```python
-# First training structure
-structure = X_train['structures'][0]
-print(structure.composition)
-print(structure.lattice)
-print(structure.density)
+### Step 4: Install ALIEGNN Package
+
+```bash
+# Navigate to project directory
+cd /path/to/Dataset_thermoconductivity_pred
+
+# Install in editable mode
+uv pip install -e .
 ```
 
-## Output Files
+### Verify Installation
 
-### Split Data
-- `processed_splits/random_split.pkl`: Random 80/20 baseline split
-- `processed_splits/space_group_split.pkl`: Space group disjoint split
-- `processed_splits/ood_split.pkl`: Out-of-distribution split
+```bash
+# Check PyTorch and CUDA
+python -c "import torch; print('PyTorch:', torch.__version__); print('CUDA:', torch.cuda.is_available())"
 
-### Visualizations
+# Check DGL
+python -c "import dgl; print('DGL:', dgl.__version__)"
 
-#### Space Group Split Visualization
-![Space Group Split](figures/space_group_split_highlight.png)
-
-Two horizontal rectangles showing:
-- **Top**: Train space groups highlighted in color (grayed out = test only)
-- **Bottom**: Test space groups highlighted in color (grayed out = train only)
-- **X-axis**: Selected space group labels (showing ~20 labels to avoid overlap)
-- Each colored segment represents a different space group, with width proportional to sample count
-- Largest groups and evenly spaced groups are labeled for clarity
-
-#### OOD klattice Histogram
-![OOD Histogram](figures/ood_klat_histogram.png)
-
-Overlaid histogram showing:
-- **X-axis**: log(k_lattice) with 50 bins for better resolution
-- **Blue**: Training set distribution (klat > 0.8)
-- **Red**: Test set distribution (klat < 1.0)
-- **Grid**: Added for easier reading
-- Clearly shows test set concentrated at lower log(klat) values (< 0.4) and train set at higher values (> 0)
-
-## Assessment Metrics
-
-### Traditional Metrics
-- **R² (Coefficient of Determination)**: Standard regression performance
-- **MAE (Mean Absolute Error)**: Average absolute prediction error
-
-### Specialized Metrics
-
-#### Low-κ Weighted Log-MAE (κ-WLMAE)
-A specialized metric designed for thermal conductivity prediction that emphasizes accuracy in the low thermal conductivity regime:
-
-**Formula:**
-```
-κ-WLMAE = Σᵢ w(yᵢ) |log(ŷᵢ) - log(yᵢ)| / Σᵢ w(yᵢ)
+# Check ALIEGNN
+python -c "from aliegnn.config import TrainingConfig; from aliegnn.models.alignn_egnn import ALIEGNN; print('✓ ALIEGNN installed successfully!')"
 ```
 
-**Weight Function:**
-```
-w(y) = min(1, (2/y)^p)
-```
+### CPU-Only Installation (Optional)
 
-**Parameters:**
-- **p = 2** (default): Mild-moderate emphasis on low-κ materials
-- **p > 2**: Stronger focus on materials with κ < 2
-- **log_base**: Natural log ('e') or base-10 ('10')
+If you don't have a GPU:
 
-**Implementation:**
-```python
-import numpy as np
-
-def kappa_wlmae(y_true, y_pred, p=2, log_base='e', eps=1e-12):
-    y_true = np.asarray(y_true, dtype=float)
-    y_pred = np.asarray(y_pred, dtype=float)
-    # weights: full weight <=2; decay as (2/y)^p above 2
-    w = np.minimum(1.0, (2.0 / np.maximum(y_true, eps))**p)
-    # log error (natural or base-10)
-    if log_base == 'e':
-        err = np.abs(np.log(np.maximum(y_pred, eps)) - np.log(np.maximum(y_true, eps)))
-    elif log_base == '10':
-        err = np.abs(np.log10(np.maximum(y_pred, eps)) - np.log10(np.maximum(y_true, eps)))
-    else:
-        raise ValueError("log_base must be 'e' or '10'")
-    return np.sum(w * err) / np.sum(w)
+```bash
+pip install torch torchvision
+conda install -c dglteam dgl
+pip install -e .
 ```
 
-**Why κ-WLMAE:**
-- **Unit-agnostic**: Multiplicative error measurement (|log ŷ - log y| ≈ relative error)
-- **Low-κ focused**: Samples with κ ≤ 2 get full weight; above 2, weight decays smoothly
-- **Robust**: Handles the wide range of thermal conductivity values 
-- **Simple**: One hyperparameter (p) controls emphasis on low-κ materials
-- **No discontinuities**: Smooth weight function, easy to implement and explain
+---
 
-## Key Features
+## Quick Start
 
-- ✅ Three split strategies: random baseline, space group disjoint, OOD
-- ✅ Comprehensive features: structures, Wyckoff positions, space groups
-- ✅ Log-transformed targets with original values included
-- ✅ Zero sample overlap across all splits
-- ✅ Optional Materials Project API integration
-- ✅ Pymatgen Structure objects for analysis
-- ✅ Reproducible with fixed random seeds
-- ✅ Specialized assessment metrics for thermal conductivity prediction
+### Dataset Preparation
 
-## Notes
+1. **Obtain dataset files:**
 
-- Original dataset had 200 duplicate mp_ids (handled appropriately)
-- All splits ensure no sample overlap
-- OOD split excludes 10 samples spanning thresholds
-- Additional properties require MP API key
+```bash
+python tools/data_obtain.py \
+    --source_file_path ./processed_splits/random_split.pkl \
+    --target_file_path ./processed_splits/ \
+    --target_name random
+```
+
+2. **Convert structures to POSCAR:**
+
+```bash
+python tools/struc2poscar.py \
+    --source_file_path ./processed_splits/random_split.pkl \
+    --target_file_path ./processed_splits/
+```
+3. **Move the config file to target directory:**
+
+Expected directory structure:
+```
+processed_splits/
+├── config_example.json
+├── random_log_train_data.csv
+├── random_log_test_data.csv
+├── mp-226 (POSCAR)/
+├── mp-361 (POSCAR)/
+└── ...
+```
+
+---
+
+## Training
+
+### Train Model
+
+```bash
+python aliegnn/script/train_folder_split_data.py \
+    --root_dir ./processed_splits \
+    --config_name config_example.json \
+    --id_prop_file_train random_train_data.csv \
+    --id_prop_file_test random_test_data.csv \
+    --output_dir ./output_random_split \
+```
+
+### Training Arguments
+
+- `--root_dir`: Directory containing structure files and CSV data
+- `--config_name`: Model configuration file (JSON)
+- `--id_prop_file_train`: Training data CSV (format: `mp-id,target_value`)
+- `--id_prop_file_test`: Test data CSV
+- `--output_dir`: Directory for saving trained model and logs
+
+### Training Outputs
+
+The training script creates:
+```
+output_random_split/
+├── best_model.pt                            # Best model checkpoint
+├── checkpoint_model.pt                      # Latest checkpoint
+├── config.json                              # Model configuration
+├── history_train.json                       # Training history
+├── prediction_metrics_results.csv           # Metrics
+├── prediction_results_test_set.csv          # Predictions for test set
+└── ...
+```
+
+---
+
+## Prediction
+
+### Simple Prediction Script
+
+Use `simple_predict.py` to directly load a trained `.pt` model and make predictions.
+
+### Single Structure Prediction
+
+```bash
+python aliegnn/script/simple_predict.py \
+    --model output_random_split/best_model.pt \
+    --config output_random_split/config.json \
+    --structure path/to/POSCAR
+```
+
+### Batch Prediction from CSV (Recommended)
+
+```bash
+python aliegnn/script/simple_predict.py \
+    --model output_random_split/best_model.pt \
+    --config output_random_split/config.json \
+    --csv processed_splits/random_test_data.csv \
+    --output test_predictions
+```
+
+**CSV Format:**
+```csv
+mp-226,1.759514612838539
+mp-361,0.4575221998558176
+mp-380,1.251376415806989
+```
+- First column: Material ID (mp-id)
+- Second column: Ground truth value (optional, for error calculation)
+
+### Prediction Outputs
+
+The script creates a directory with three files:
+
+```
+test_predictions/
+├── predictions.csv      # Detailed predictions for each material
+├── predictions.json     # Same data in JSON format
+└── SUMMARY.txt          # Overall statistics and metrics
+```
+
+**predictions.csv columns:**
+- `mp_id`: Material identifier
+- `formula`: Chemical formula
+- `ground_truth`: True value (if provided in input CSV)
+- `prediction`: Model prediction
+- `absolute_error`: |prediction - ground_truth|
+- `relative_error_percent`: Relative error as percentage
+
+**SUMMARY.txt includes:**
+- Input file paths
+- Total/Success/Failed counts
+- Prediction statistics (Mean, Std, Min, Max)
+- Error metrics: MAE, R², MAPE (if ground truth available)
+- List of failed materials
+
+### Supported File Formats
+
+- **POSCAR/CONTCAR**: VASP structure files
+- **CIF**: Crystallographic Information File
+- **XYZ**: XYZ coordinate file
+
+The script auto-detects file format based on extension.
+
+### Advanced Options
+
+```bash
+python aliegnn/script/simple_predict.py \
+    --model best_model.pt \
+    --config config.json \
+    --csv test_data.csv \
+    --structures_dir /custom/path/to/structures \  # Custom structure directory
+    --output my_predictions \                       # Custom output directory
+    --format cif                                    # Force file format
+```
+
+---
+
+## Troubleshooting
+
+### CUDA Version Mismatch
+
+Check your CUDA version:
+```bash
+nvcc --version
+nvidia-smi
+```
+
+Install matching PyTorch and DGL versions for your CUDA version.
+
+### Import Errors
+
+If you encounter import errors after installation:
+```bash
+# Reinstall ALIEGNN
+pip install -e . --force-reinstall --no-deps
+```
+
+### Memory Issues
+
+If you encounter out-of-memory errors during training:
+- Reduce batch size: `--batch_size 32`
+- Use gradient accumulation
+- Monitor GPU usage: `watch -n 1 nvidia-smi`
+
+### Structure File Not Found
+
+When using CSV prediction, ensure:
+1. Structures are in the same directory as CSV, or use `--structures_dir`
+2. Structure folders are named exactly as mp-id in CSV
+3. POSCAR/CONTCAR files exist in each structure folder
+
+---
+
+## Dependencies
+
+### Core Requirements
+
+- Python: 3.8+
+- PyTorch: 2.4.1+cu118
+- Torchvision: 0.19.1+cu118
+- DGL: 2.4.0 (th24_cu118)
+- CUDA: 11.8
+
+### Additional Dependencies
+
+- jarvis-tools
+- numpy
+- pandas
+- tqdm
+- pydantic
+
+---
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+---
+
+## Contact
+
+For questions or issues, please:
+- Open an issue on GitHub
+- Contact: WANG ZEYU
+
+---
+
+## Acknowledgments
+
+Based on the ALIGNN architecture with equivariant neural network enhancements.
