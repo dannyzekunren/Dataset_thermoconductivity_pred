@@ -165,3 +165,5 @@ thermal-conductivity-prediction/
 - [ ] Multi feature attention.
 - [ ] Graph KANs.
 - [ ] KAN Transformer.
+
+> The features used in these models are somewhat basic (no information about local environment and site symmetry). This consideration is mainly due to the data size (~4000 samples). More complex features may lead to overfitting. Future work could explore advanced feature engineering or data augmentation techniques to enhance model performance.
