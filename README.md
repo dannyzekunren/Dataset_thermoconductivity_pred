@@ -200,9 +200,9 @@ python aliegnn/script/simple_predict.py \
 
 **CSV Format:**
 ```csv
-mp-226,1.759514612838539
-mp-361,0.4575221998558176
-mp-380,1.251376415806989
+mp-226,4.0514321184272095
+mp-361,1.0534837971018483
+mp-380,2.8814006807614914
 ```
 - First column: Material ID (mp-id)
 - Second column: Ground truth value (optional, for error calculation)
