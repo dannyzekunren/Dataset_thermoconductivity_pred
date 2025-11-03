@@ -19,15 +19,13 @@ def data_obtain(source_file_path, target_file_path,target_name):
 
     X_train = data['X_train']
     X_train_id = np.array(X_train['mp_ids'])
-    y_train_klat = data['y_train_klat']
-    y_train = np.log10(y_train_klat)
+    y_train = data['y_train_log_klat']
     train_data = [X_train_id, y_train]
     train_data_pd = pd.DataFrame(train_data).transpose()
 
     X_test = data['X_test']
     X_test_id = np.array(X_test['mp_ids'])
-    y_test_klat = data['y_test_klat']
-    y_test = np.log10(y_test_klat)
+    y_test = data['y_test_log_klat']
     test_data = [np.array(X_test_id), y_test]
     test_data_pd = pd.DataFrame(test_data).transpose()
 
