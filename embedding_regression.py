@@ -44,7 +44,7 @@ except ImportError:
     print("Warning: TabPFN not available. TabPFN model will not be available.")
     print("Install with: pip install tabpfn")
 
-
+#TABPFN_AVAILABLE = False
 # Set random seeds for reproducibility
 RANDOM_SEED = 42
 torch.manual_seed(RANDOM_SEED)
@@ -1064,19 +1064,57 @@ def main():
     print(f"Weighted loss (focus on log(κ) < 1): {args.weighted_loss}")
     print('='*80)
     
-    # Setup device
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"\nUsing device: {device}")
+    # Setup device with CUDA compatibility check
+    def test_cuda_compatibility():
+        """Test if CUDA is available and compatible."""
+        if not torch.cuda.is_available():
+            return False, "CUDA not available"
+
+        try:
+            # Test basic CUDA operations
+            device = torch.device("cuda")
+            x = torch.randn(10, 10).to(device)
+            y = torch.arange(100, device=device)
+            _ = x @ x.T
+            _ = y.sum()
+            return True, "CUDA compatible"
+        except Exception as e:
+            return False, f"CUDA error: {str(e)[:100]}..."
+
+    cuda_ok, cuda_msg = test_cuda_compatibility()
+
+    if cuda_ok:
+        device = torch.device("cuda")
+        print(f"\nUsing device: {device}")
+    else:
+        device = torch.device("cpu")
+        print(f"\nCUDA compatibility issue: {cuda_msg}")
+        print(f"Using device: {device} (CPU fallback)")
     
     # Load ORB model
     print("\nLoading orb-v3-conservative-20-omat model...")
-    orbff = pretrained.orb_v3_conservative_20_omat(
-        device=device,
-        precision="float32-highest",
-        compile=False  # Disable compilation to avoid C++ compiler requirement
-    )
+    try:
+        orbff = pretrained.orb_v3_conservative_20_omat(
+            device=device,
+            precision="float32-highest",
+            compile=False  # Disable compilation to avoid C++ compiler requirement
+        )
+        print("Model loaded successfully!")
+    except Exception as e:
+        if "cuda" in str(e).lower():
+            print(f"CUDA error loading model: {e}")
+            print("Attempting to load on CPU...")
+            device = torch.device("cpu")
+            orbff = pretrained.orb_v3_conservative_20_omat(
+                device=device,
+                precision="float32-highest",
+                compile=False
+            )
+            print("Model loaded successfully on CPU!")
+        else:
+            raise e
+
     orbff.eval()
-    print("Model loaded successfully!")
     
     # Data splits to process
     splits = args.splits

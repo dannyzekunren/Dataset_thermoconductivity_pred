@@ -2,6 +2,10 @@
 
 This repository contains three distinct train/test splits for thermal conductivity prediction models, generated from Materials Project data.
 
+## ⭐ Best Model: CNN-B
+
+**CNN-B (sequence embeddings) is the recommended model** for thermal conductivity prediction. It processes per-atom embeddings with masked global pooling, achieving superior performance across all data splits (random, space group, and out-of-distribution splits). CNN-B effectively handles variable-length crystal structures and captures atomic-level patterns that are critical for thermal conductivity prediction.
+
 ## Overview
 
 Three splits are provided:
@@ -51,11 +55,46 @@ Each split pickle file contains:
 
 ## Installation
 
+### 1. Install Base Dependencies
+
 ```bash
 pip install -r requirements.txt
 ```
 
-### Optional: Materials Project API
+### 2. Install PyTorch
+
+**Important**: PyTorch installation depends on your CUDA version. Install the appropriate version:
+
+- **With CUDA support**: Visit [PyTorch installation page](https://pytorch.org/get-started/locally/) and select your CUDA version
+- **CPU only**: `pip install torch --index-url https://download.pytorch.org/whl/cpu`
+
+**Note**: Ensure PyTorch CUDA version matches your GPU driver. If you encounter CUDA errors, see the Troubleshooting section.
+
+### 3. Install ORB Models (Required for Embedding Extraction)
+
+The script uses `orb-models` to extract embeddings from crystal structures. Install it using:
+
+```bash
+pip install orb-models
+```
+
+**Note**: The ORB model (`orb-v3-conservative-20-omat`) will be automatically downloaded on first use. This requires internet connection and may take several minutes depending on your connection speed.
+
+### 4. Optional: Install Additional Model Dependencies
+
+#### For CGCNN (Graph Neural Network):
+```bash
+pip install torch-geometric
+```
+
+#### For TabPFN (Tabular Transformer):
+```bash
+pip install tabpfn
+```
+
+**Note**: Both CGCNN and TabPFN are optional. If not installed, the script will skip these models with a warning.
+
+### 5. Optional: Materials Project API
 
 To fetch additional properties (formation energy, band gap, elasticity):
 
@@ -72,7 +111,142 @@ Without API key, additional properties will be `None` (structures still availabl
 python data_spilit.py
 ```
 
-### Load Data
+### Train Models with MLIP Embeddings
+
+The `embedding_regression.py` script extracts embeddings from ORB models and trains various architectures (CNN-A, CNN-B, CGCNN, TabPFN) to predict thermal conductivity.
+
+#### Quick Start: Train CNN-B on All Splits (Recommended)
+
+The simplest command to train CNN-B (the best model) on all three splits:
+
+```bash
+python embedding_regression.py --model CNN-B
+```
+
+**Note**: The script now automatically detects CUDA compatibility issues and falls back to CPU mode if needed. No additional wrapper scripts are required for most users.
+
+Or explicitly specify all splits:
+
+```bash
+python embedding_regression.py --model CNN-B --splits ood_split random_split space_group_split
+```
+
+#### CLI Command Reference
+
+**Basic Usage:**
+```bash
+python embedding_regression.py [OPTIONS]
+```
+
+**Available Options:**
+
+- `--model`: Model to train
+  - `CNN-A`: Aggregated embeddings (mean + max pooling)
+  - `CNN-B`: Per-atom sequence embeddings with masked pooling  **Best**
+  - `CGCNN`: Crystal Graph Convolutional Neural Network (requires `torch-geometric`)
+  - `TabPFN`: Tabular transformer using masked statistics (requires `tabpfn`)
+  - `all`: Train all available models (default)
+
+- `--splits`: Data splits to process (space-separated)
+  - `ood_split`: Out-of-distribution split
+  - `random_split`: Random 80/20 split
+  - `space_group_split`: Space group disjoint split
+  - Default: all three splits
+
+- `--use-properties`: Enable material properties as additional features
+  - Includes: formation energy, e_above_hull, band gap, elasticity_K_VRH, elasticity_G_VRH
+
+- `--ood-scaler`: Scaler type for OOD split properties
+  - `robust`: RobustScaler (default, handles outliers better)
+  - `standard`: StandardScaler
+  - `minmax`: MinMaxScaler
+
+- `--weighted-loss`: Use weighted loss focusing on log(κ) < 1
+
+#### Example Commands
+
+**1. Train CNN-B on all splits (recommended):**
+```bash
+python embedding_regression.py --model CNN-B
+```
+
+**2. Train CNN-B with material properties:**
+```bash
+python embedding_regression.py --model CNN-B --use-properties
+```
+
+**3. Train CNN-A only:**
+```bash
+python embedding_regression.py --model CNN-A --splits random_split
+```
+
+**4. Train all models on OOD split:**
+```bash
+python embedding_regression.py --model all --splits ood_split
+```
+
+**5. Train CGCNN with properties:**
+```bash
+python embedding_regression.py --model CGCNN --use-properties
+```
+
+**6. Train TabPFN on all splits:**
+```bash
+python embedding_regression.py --model TabPFN
+```
+
+**7. Train CNN-B with weighted loss (focus on low κ):**
+```bash
+python embedding_regression.py --model CNN-B --weighted-loss
+```
+
+#### Output
+
+The script generates:
+- **Console output**: Training progress, validation metrics, and summary table
+- **Cache files**: Extracted embeddings saved in `cache/` directory (reused on subsequent runs)
+- **Visualization**: `thermal_conductivity_predictions.png` with scatter plots for all model/split combinations
+- **Metrics**: R² and MAE scores printed for each model and split
+
+#### Performance Notes
+
+- **First run**: Embedding extraction takes time (cached for future runs)
+- **GPU recommended**: Training is faster on CUDA-enabled GPUs
+- **Memory**: CGCNN and TabPFN require more memory; TabPFN has sample/feature limits
+
+#### Troubleshooting
+
+**CUDA Compatibility Issues:**
+
+The script now automatically detects CUDA compatibility issues and falls back to CPU mode. If you encounter CUDA errors, the script will:
+
+1. **Automatically test CUDA** when it starts
+2. **Fall back to CPU** if CUDA operations fail
+3. **Continue execution** on CPU (slower but compatible)
+
+For manual control, you can also:
+
+1. **Force CPU mode** (if needed):
+   ```bash
+   # Set environment variable to use CPU
+   set CUDA_VISIBLE_DEVICES=-1
+   python embedding_regression.py --model CNN-B
+   ```
+
+2. **Reinstall PyTorch with correct CUDA version**:
+   - Check your CUDA version: `nvidia-smi`
+   - Install matching PyTorch: https://pytorch.org/get-started/locally/
+   - Example for CUDA 11.8:
+     ```bash
+     pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+     ```
+
+3. **Use CPU-only PyTorch**:
+   ```bash
+   pip install torch --index-url https://download.pytorch.org/whl/cpu
+   ```
+
+### Load Data (Python API)
 ```python
 import pickle
 import pandas as pd
