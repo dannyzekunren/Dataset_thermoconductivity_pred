@@ -323,6 +323,29 @@ For questions or issues, please:
 - Open an issue on GitHub
 - Contact: WANG ZEYU
 
+## 🔧 Required Patch: Jarvis
+
+This project requires a small modification to the Jarvis source code.
+Or you will meet a issue:
+```
+line 688, in __getitem__
+    return self._columns[name].data
+KeyError: 'coords'
+```
+
+Please edit the function `Graph.atom_dgl_multigraph` in:
+/path/to/envs/aliegnn/lib/python3.8/site-packages/jarvis/core/graphs.py
+
+```python
+g.ndata["atom_features"] = node_features
+g.edata["r"] = r
+g.ndata["frac_coords"] = torch.tensor(atoms.frac_coords).type(
+    torch.get_default_dtype()
+)
+g.ndata["coords"] = torch.tensor(atoms.cart_coords).type(
+    torch.get_default_dtype()
+)
+```
 ---
 
 ## Acknowledgments
