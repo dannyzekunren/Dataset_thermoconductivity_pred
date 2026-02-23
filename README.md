@@ -2,6 +2,36 @@
 
 This repository contains three distinct train/test splits for thermal conductivity prediction models, generated from Materials Project data.
 
+## Pipeline Architecture (模型结构)
+
+The following diagram shows the full data pipeline from raw inputs to the three split artefacts used for model training and assessment.
+
+```mermaid
+flowchart TD
+    A["mp_ids_thermal_conductivity.npz\n(mp_ids, klat, kc, kp)"] --> C
+    B["Structures_not_sym.json\n(pymatgen Structure objects)"] --> C
+
+    C["compute_symmetry_payload\n• Refine structures\n• Symmetrize structures\n• Extract space-group symbol / number"] --> D
+
+    D["build_filtered_dataframe\n• Remove invalid klat values\n  (≤ 0, > 10⁵, non-finite)\n• Extract Wyckoff letters / symbols\n• Compute log(klat)\n• Fetch optional MP properties\n  (e_above_hull, band_gap, elasticity …)"]
+
+    D --> E["Random 80/20 Split\nbuild_random_split"]
+    D --> F["Space-Group Disjoint Split\nsplit_by_space_group"]
+    D --> G["Out-of-Distribution Split\nbuild_ood_split"]
+
+    E --> H1["random_split.pkl"]
+    F --> H2["space_group_split.pkl"]
+    G --> H3["ood_split.pkl"]
+
+    subgraph payload ["Each .pkl payload"]
+        direction TB
+        P1["X_train / X_test\n• mp_ids\n• structures (original + symmetrized)\n• wyckoff_letters / wyckoff_symbols\n• spacegroup_symbol / number\n• e_above_hull, band_gap,\n  formation_energy_per_atom,\n  total_magnetization, elasticity …"]
+        P2["y_train / y_test\n• log_klat  (log-transformed target)\n• klat      (original target)"]
+    end
+
+    H1 & H2 & H3 --> payload
+```
+
 ## Overview
 
 Three splits are provided:
