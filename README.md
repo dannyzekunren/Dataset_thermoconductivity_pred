@@ -1,6 +1,6 @@
-# Forward Models for Thermal Conductivity Prediction
+# ML Models for Thermal Conductivity Prediction
 
-This branch contains implementations of 4 simple ML models used to predict thermal conductivity in materials science.
+This branch contains implementations of 4 simple ML models used to predict lattice thermal conductivity.
 
 Notes:
 - All performance metrics are evaluated under <mark>ln</mark> scale.
@@ -60,8 +60,6 @@ The feature extraction is done by the script: `feature/featurization.py`.
 
 4. Linear Regression
     - Implemented in `train/linear_regression/train_linear_regression.py`.
-    - Uses the same composition + SOAP + SymmCD representation and log-scale target as the other models.
-    - Run all splits with `python train/linear_regression/train_linear_regression.py`.
     - Performance:
 
       | Metric | Random | SPG | OOD |
@@ -165,7 +163,7 @@ thermal-conductivity-prediction/
 └── requirements.txt           # Python dependencies
 ```
 
-### Scripts & Key Files
+### Key Files
 - **Feature extraction**: `feature/featurization.py`
 - **Training scripts**:
   - XGBoost: `train/xgboost/train_xbg.py`
@@ -174,4 +172,4 @@ thermal-conductivity-prediction/
   - Linear regression: `train/linear_regression/train_linear_regression.py`
 - **Saved models**: `models/` directory contains the trained models.
 
-> The features used in these models are somewhat basic (no information about local environment and site symmetry). This consideration is mainly due to the data size (~4000 samples). More complex features may lead to overfitting. Future work could explore advanced feature engineering or data augmentation techniques to enhance model performance.
+> The features used in these models are somewhat basic (no information about local environment and site symmetry). This consideration is mainly due to the data size (~4000 samples). More complex features may lead to overfitting.
