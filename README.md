@@ -1,11 +1,9 @@
 # Forward Models for Thermal Conductivity Prediction
 
-@[Jianghai](https://github.com/Ocean-JH)
+This branch contains implementations of 4 simple ML models used to predict thermal conductivity in materials science.
 
-This branch contains implementations of various forward models used to predict thermal conductivity in materials science.
 Notes:
-- It is recommended to run all scripts on GPU.
-- All performance metrics are evaluated under <mark>log</mark> scale.
+- All performance metrics are evaluated under <mark>ln</mark> scale.
 ## Table of Contents
 
 - [Features](#features)
@@ -13,6 +11,7 @@ Notes:
   - [XGBoost Regressor](#xgboost-regressor)
   - [Kolmogorov-Arnold Networks (KANs)](#kolmogorov-arnold-networks-kans)
   - [Multi-Layer Perceptron (MLP)](#multi-layer-perceptron-mlp)
+  - [Linear Regression](#linear-regression)
 - [Evaluation](#evaluation)
 - [Getting Started](#getting-started)
 - [Project structure](#project-structure)
@@ -58,6 +57,17 @@ The feature extraction is done by the script: `feature/featurization.py`.
       |-------|--------|-------|--------|
       | MAE | 0.431  | 0.627 | 1.454  |
       | $R^2$ | 0.751  | 0.631 | -5.968 |
+
+4. Linear Regression
+    - Implemented in `train/linear_regression/train_linear_regression.py`.
+    - Uses the same composition + SOAP + SymmCD representation and log-scale target as the other models.
+    - Run all splits with `python train/linear_regression/train_linear_regression.py`.
+    - Performance:
+
+      | Metric | Random | SPG | OOD |
+      |-------|--------|-----|-----|
+      | MAE | 0.571 | 0.668 | 1.399 |
+      | $R^2$ | 0.665 | 0.633 | -5.000 |
 
 
 ### Evaluation
@@ -144,6 +154,9 @@ thermal-conductivity-prediction/
 │   ├── mlp/                   # MLP training scripts
 │   │   └── train_mlp.py       # Main script for training MLPs
 │   │
+│   ├── linear_regression/     # Linear regression baseline
+│   │   └── train_linear_regression.py
+│   │
 │   └── xgboost/               # XGBoost training scripts
 │       └── train_xbg.py       # Main script for training XGBoost models
 │
@@ -158,12 +171,7 @@ thermal-conductivity-prediction/
   - XGBoost: `train/xgboost/train_xbg.py`
   - KAN: `train/kan/train_kan.py`
   - MLP: `train/mlp/train_mlp.py`
+  - Linear regression: `train/linear_regression/train_linear_regression.py`
 - **Saved models**: `models/` directory contains the trained models.
-
-### TODO
-- [x] Attention regressor.
-- [ ] Multi feature attention.
-- [ ] Graph KANs.
-- [ ] KAN Transformer.
 
 > The features used in these models are somewhat basic (no information about local environment and site symmetry). This consideration is mainly due to the data size (~4000 samples). More complex features may lead to overfitting. Future work could explore advanced feature engineering or data augmentation techniques to enhance model performance.
