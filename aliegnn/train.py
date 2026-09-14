@@ -5,6 +5,7 @@ from the repository root, run
 then `tensorboard --logdir tb_logs/test` to monitor results...
 """
 import gc
+import csv
 
 from functools import partial
 
@@ -63,6 +64,48 @@ device = "cpu"
 if torch.cuda.is_available():
     device = torch.device("cuda")
 
+
+def write_train_predictions(net, train_loader, config, cv=0):
+    """Export every training sample once, in dataset order, after model selection."""
+    export_loader = torch.utils.data.DataLoader(
+        train_loader.dataset,
+        batch_size=train_loader.batch_size or 1,
+        shuffle=False,
+        drop_last=False,
+        collate_fn=train_loader.collate_fn,
+        num_workers=train_loader.num_workers,
+        pin_memory=train_loader.pin_memory,
+    )
+    ids = list(train_loader.dataset.ids)
+    scaler = None
+    if config.standard_scalar_and_pca:
+        with open(os.path.join(config.output_dir, "sc.pkl"), "rb") as handle:
+            scaler = pk.load(handle)
+    path = os.path.join(config.output_dir, f"prediction_results_train_set_cv_{cv}.csv")
+    net.eval()
+    offset = 0
+    with open(path, "w", newline="") as handle, torch.no_grad():
+        writer = csv.writer(handle)
+        writer.writerow(["id", "target", "prediction"])
+        for batch in export_loader:
+            g, lg, target = batch
+            predictions = net([g.to(device), lg.to(device)]).detach().cpu().numpy().reshape(-1)
+            targets = target.detach().cpu().numpy().reshape(-1)
+            if len(predictions) != len(targets):
+                raise ValueError("Scalar prediction count does not match training target count")
+            if scaler is not None:
+                # Retain the same prediction transform as the test-set exporter.
+                predictions = scaler.transform(predictions.reshape(-1, 1)).reshape(-1)
+            batch_ids = ids[offset:offset + len(targets)]
+            if len(batch_ids) != len(targets):
+                raise ValueError("Training dataset IDs do not match its samples")
+            writer.writerows(
+                (identity, float(label), float(prediction))
+                for identity, label, prediction in zip(batch_ids, targets, predictions)
+            )
+            offset += len(targets)
+    if offset != len(ids):
+        raise ValueError("Training prediction export did not cover every sample")
 
 def activated_output_transform(output):
     """Exponentiate output."""
@@ -635,91 +678,8 @@ def train_dgl(
         f.write("%s, %6f, %6f\n" % (f"cv_{cv}", MAE, r2))
         f.close()
 
-        net.eval()
-        # net.eval()
-        f = open(
-            os.path.join(
-                config.output_dir, f"prediction_results_train_set_cv_{cv}.csv"
-            ),
-            "w",
-        )
-        f.write("target,prediction\n")
-        targets = []
-        predictions = []
-        with torch.no_grad():
-            ids = train_loader.dataset.ids  
-            for dat, id in zip(train_loader, ids):
-                g, lg, target = dat
-                out_data = net([g.to(device), lg.to(device)])
-                # out_data = net([g.to(device), lg.to(device)])["out"]
-                out_data = out_data.cpu().numpy().tolist()
-                if config.standard_scalar_and_pca:
-                    sc = pk.load(
-                        open(os.path.join(tmp_output_dir, "sc.pkl"), "rb")
-                    )
-                    out_data = sc.transform(
-                        np.array(out_data).reshape(-1, 1)
-                    )[0][0]
-                target = target.cpu().numpy().flatten().tolist()
-                if len(target) == 1:
-                   target = target[0]
-                # if len(out_data) == 1:
-                #    out_data = out_data[0]
-                for ii, jj in zip(target, out_data):
-                    f.write("%6f, %6f\n" % (ii, jj))
-                    targets.append(ii)
-                    predictions.append(jj)
-        f.close()
+        write_train_predictions(net, train_loader, config, cv)
 
-        if config.store_outputs and not classification:
-            x = []
-            y = []
-            for i in history["EOS"]:
-                x.append(i[0].cpu().numpy().tolist())
-                y.append(i[1].cpu().numpy().tolist())
-            x = np.array(x, dtype="float").flatten()
-            y = np.array(y, dtype="float").flatten()
-            f = open(
-                os.path.join(
-                    config.output_dir, f"prediction_results_train_set_cv_{cv}.csv"
-                ),
-                "w",
-            )
-            # TODO: Add IDs
-            f.write("target,prediction\n")
-            for i, j in zip(x, y):
-                f.write("%6f, %6f\n" % (j, i))
-                line = str(i) + "," + str(j) + "\n"
-                f.write(line)
-            f.close()
-
-    # TODO: Fix IDs for train loader
-    """
-    if config.write_train_predictions:
-        net.eval()
-        f = open("train_prediction_results.csv", "w")
-        f.write("id,target,prediction\n")
-        with torch.no_grad():
-            ids = train_loader.dataset.dataset.ids[
-                train_loader.dataset.indices
-            ]
-            print("lens", len(ids), len(train_loader.dataset.dataset))
-            x = []
-            y = []
-
-            for dat, id in zip(train_loader, ids):
-                g, lg, target = dat
-                out_data = net([g.to(device), lg.to(device)])
-                out_data = out_data.cpu().numpy().tolist()
-                target = target.cpu().numpy().flatten().tolist()
-                for i, j in zip(out_data, target):
-                    x.append(i)
-                    y.append(j)
-            for i, j, k in zip(ids, x, y):
-                f.write("%s, %6f, %6f\n" % (i, j, k))
-        f.close()
-
-    """
     del net
     del optimizer
     del trainer
