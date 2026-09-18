@@ -131,19 +131,6 @@ Run the validation script to verify your setup:
 python validate_setup.py
 ```
 
-## Citation
-
-If you use this model in your research, please cite:
-
-```bibtex
-@misc{attention_hybrid_bnn_2024,
-  title={Attention Hybrid BNN for Thermal Conductivity Prediction},
-  author={[Your Name]},
-  year={2024},
-  note={Model achieving R² = 0.746 on thermal conductivity prediction}
-}
-```
-
 ### 📊 Model Architecture
 
 ```
@@ -230,31 +217,6 @@ print(f"MPS available: {torch.backends.mps.is_available()}")
 - **Position-Aware**: Incorporates structural position information
 - **Interpretable**: Attention weights provide model explainability
 
-### 🔬 Research Applications
-
-#### Materials Discovery
-- **High-Throughput Screening**: Rapid evaluation of thermal conductivity candidates
-- **Design Optimization**: Uncertainty-guided materials design
-- **Property Prediction**: Reliable predictions with confidence intervals
-
-#### Computational Materials Science
-- **Benchmark Comparisons**: State-of-the-art baseline for thermal conductivity
-- **Method Development**: Framework for attention-based materials property prediction
-- **Uncertainty Analysis**: Bayesian deep learning for materials informatics
-
-### 📝 Citation
-
-If you use this model in your research, please cite:
-
-```bibtex
-@misc{attention_hybrid_bnn_2024,
-  title={Apple Silicon GPU-Accelerated Attention Hybrid BNN for Thermal Conductivity Prediction},
-  author={[Your Name]},
-  year={2024},
-  note={Breakthrough model achieving R² = 0.746 on thermal conductivity prediction}
-}
-```
-
 ### 🛠️ Troubleshooting
 
 #### Common Issues
@@ -283,14 +245,3 @@ If you use this model in your research, please cite:
 - **Results Analysis**: See `results/FINAL_OPTIMIZED_attention_hybrid_results.csv`
 - **Configuration**: See `config/FINAL_best_attention_config.json`
 
-### 🤝 Contributing
-
-We welcome contributions! Please see the main repository's contributing guidelines.
-
-### 📄 License
-
-This project is licensed under the same terms as the parent repository.
-
----
-
-**🔥 Breakthrough Achievement**: First attention-based BNN with Apple Silicon GPU optimization for materials property prediction, achieving state-of-the-art R² = 0.746 performance!
