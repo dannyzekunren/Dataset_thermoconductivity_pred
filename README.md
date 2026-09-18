@@ -1,6 +1,6 @@
-# Thermal Conductivity Dataset Splits
+# Thermal Conductivity Dataset and Surrogate Models
 
-This repository contains three distinct train/test splits for thermal conductivity prediction models, generated from Materials Project data.
+This repository provides curated train/test splits for lattice thermal conductivity prediction, constructed from Materials Project and [Phonix](https://huggingface.co/phonix-db) data, together with resources for training and evaluating surrogate models for thermal conductivity prediction. The repository includes multiple data-splitting strategies designed to assess both in-distribution performance and model generalization, as well as references to the benchmark and custom models used in this work.
 
 ## Overview
 
@@ -132,6 +132,18 @@ Overlaid histogram showing:
 - **Grid**: Added for easier reading
 - Clearly shows test set concentrated at lower log(klat) values (< 0.4) and train set at higher values (> 0)
 
+## Models
+
+Custom models developed in this work are available in the corresponding branches of this repository.
+
+For the benchmark models used in the paper, please refer to their official repositories and follow the instructions provided there to reproduce the reported results:
+
+- [HackNIP](https://github.com/parkyjmit/HackNIP)
+- [CGCNN](https://github.com/txie-93/cgcnn)
+- [WyFormer](https://github.com/SymmetryAdvantage/WyckoffTransformer)
+- [CrabNet](https://github.com/anthony-wang/CrabNet)
+- [eqV2-MEX](https://github.com/panmianzhi/Matching-based-EXtrapolation)
+
 ## Assessment Metrics
 
 ### Traditional Metrics
@@ -201,3 +213,34 @@ def kappa_wlmae(y_true, y_pred, p=2, log_base='e', eps=1e-12):
 - All splits ensure no sample overlap
 - OOD split excludes 10 samples spanning thresholds
 - Additional properties require MP API key
+
+## Citation
+
+If you use this dataset or the surrogate models in your work, please consider citing the following papers:
+
+```bibtex
+@article{Ohnishi2026,
+  title = {Database and deep-learning scalability of anharmonic phonon properties by automated brute-force first-principles calculations},
+  volume = {12},
+  ISSN = {2057-3960},
+  url = {http://dx.doi.org/10.1038/s41524-026-02033-w},
+  DOI = {10.1038/s41524-026-02033-w},
+  number = {1},
+  journal = {npj Computational Materials},
+  publisher = {Springer Science and Business Media LLC},
+  author = {Ohnishi, Masato and Deng, Tianqi and Torres, Pol and Xu, Zhihao and Tadano, Terumasa and Zhang, Haoming and Nong, Wei and Hanai, Masatoshi and Wang, Zeyu and Morita, Michimasa and Tian, Zhiting and Hu, Ming and Ruan, Xiulin and Yoshida, Ryo and Suzumura, Toyotaro and Lindsay, Lucas and McGaughey, Alan J. H. and Luo, Tengfei and Hippalgaonkar, Kedar and Shiomi, Junichiro},
+  year = {2026},
+  month = apr
+}
+
+@misc{Wang2026,
+  doi = {10.48550/ARXIV.2605.11610},
+  url = {https://arxiv.org/abs/2605.11610},
+  author = {Wang, Zeyu and Yamazaki, Shuya and Petersen, Martin Hoffmann and Ohnishi, Masato and Yamamoto, Tomiya and Nong, Wei and Wang, Jianghai and Zhu, Ruiming and Hanai, Masatoshi and Morita, Michimasa and Suzumura, Toyotaro and Ren, Zekun and Shiomi, Junichiro and Hippalgaonkar, Kedar},
+  keywords = {Materials Science (cond-mat.mtrl-sci), Computational Physics (physics.comp-ph), FOS: Physical sciences, FOS: Physical sciences},
+  title = {Fast and Accurate Prediction of Lattice Thermal Conductivity via Machine Learning Surrogates},
+  publisher = {arXiv},
+  year = {2026},
+  copyright = {Creative Commons Attribution 4.0 International}
+}
+
