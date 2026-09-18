@@ -1,6 +1,6 @@
 # Thermal Conductivity Dataset and Surrogate Models
 
-This repository provides curated train/test splits for lattice thermal conductivity prediction, constructed from Materials Project and [Phonix](https://huggingface.co/phonix-db) data, together with resources for training and evaluating surrogate models for thermal conductivity prediction. The repository includes multiple data-splitting strategies designed to assess both in-distribution performance and model generalization, as well as references to the benchmark and custom models used in this work.
+This repository provides curated train/test splits for lattice thermal conductivity prediction, constructed from Materials Project and [Phonix](https://huggingface.co/phonix-db) data, together with resources for training and evaluating surrogate models for thermal conductivity prediction. 
 
 ## Overview
 
@@ -135,6 +135,11 @@ Overlaid histogram showing:
 ## Models
 
 Custom models developed in this work are available in the corresponding branches of this repository.
+
+- [ALIEGNN](https://github.com/dannyzekunren/Dataset_thermoconductivity_pred/tree/Zeyu)
+- [Orb+{CNN,TabPFN}](https://github.com/dannyzekunren/Dataset_thermoconductivity_pred/tree/Danny)
+- [KAN,MLP,XGB,LR](https://github.com/dannyzekunren/Dataset_thermoconductivity_pred/tree/jianghai)
+- [ViKING](https://github.com/dannyzekunren/Dataset_thermoconductivity_pred/tree/kedhip)
 
 For the benchmark models used in the paper, please refer to their official repositories and follow the instructions provided there to reproduce the reported results:
 
