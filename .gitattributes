@@ -1,1 +1,2 @@
 mace_omat/*.pkl filter=lfs diff=lfs merge=lfs -text
+mace_mpa/*.pkl filter=lfs diff=lfs merge=lfs -text
