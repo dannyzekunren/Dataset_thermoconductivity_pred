@@ -137,7 +137,8 @@ Overlaid histogram showing:
 Custom models developed in this work are available in the corresponding branches of this repository.
 
 - [ALIEGNN](https://github.com/dannyzekunren/Dataset_thermoconductivity_pred/tree/Zeyu)
-- [Orb+{CNN, TabPFN}](https://github.com/dannyzekunren/Dataset_thermoconductivity_pred/tree/Danny)
+- [Orb + {CNN, TabPFN}](https://github.com/dannyzekunren/Dataset_thermoconductivity_pred/tree/Danny)
+- [MACE + MLP](https://github.com/dannyzekunren/Dataset_thermoconductivity_pred/tree/mahpe)
 - [KAN, MLP, XGB, LR](https://github.com/dannyzekunren/Dataset_thermoconductivity_pred/tree/jianghai)
 - [ViKING](https://github.com/dannyzekunren/Dataset_thermoconductivity_pred/tree/kedhip)
 
