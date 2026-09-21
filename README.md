@@ -140,6 +140,7 @@ Custom models developed in this work are available in the corresponding branches
 - [Orb+{CNN, TabPFN}](https://github.com/dannyzekunren/Dataset_thermoconductivity_pred/tree/Danny)
 - [KAN, MLP, XGB, LR](https://github.com/dannyzekunren/Dataset_thermoconductivity_pred/tree/jianghai)
 - [ViKING](https://github.com/dannyzekunren/Dataset_thermoconductivity_pred/tree/kedhip)
+- [MACE fine-tuning and descriptor-based prediction](https://github.com/dannyzekunren/Dataset_thermoconductivity_pred/tree/mahpe)
 
 For the benchmark models used in the paper, please refer to their official repositories and follow the instructions provided there to reproduce the reported results:
 
