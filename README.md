@@ -1,6 +1,8 @@
 # Thermal Conductivity Dataset and Surrogate Models
 
-This repository provides curated train/test splits for lattice thermal conductivity prediction, constructed from Materials Project and [Phonix](https://huggingface.co/phonix-db) data, together with resources for training and evaluating surrogate models for thermal conductivity prediction. 
+This repository provides curated train/test splits for lattice thermal conductivity prediction, constructed from Materials Project and [Phonix](https://huggingface.co/phonix-db) data, together with resources for training and evaluating surrogate models for thermal conductivity prediction.
+
+On the **`mahpe` branch**, this README also documents fine-tuning [MACE](https://github.com/ACEsuit/mace) on `log(k_lat)` and a descriptor-based linear-regression baseline using precomputed MACE-OMat features.
 
 ## Overview
 
@@ -102,6 +104,75 @@ print(structure.composition)
 print(structure.lattice)
 print(structure.density)
 ```
+
+## MACE workflow (`mahpe` branch)
+
+This branch adds two ways to predict lattice thermal conductivity with MACE-related models: **end-to-end fine-tuning** on the provided ASE xyz splits, and **frozen MACE-OMat descriptors** followed by ordinary least-squares regression (see `Mace_feat_pred.ipynb`).
+
+### Get the branch and large descriptor files
+
+Descriptor pickles under `mace_omat/` are stored with [Git LFS](https://git-lfs.github.com). After cloning the repository:
+
+```bash
+git lfs install
+git checkout mahpe
+git lfs pull
+```
+
+### Environment
+
+Install the dataset dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+For MACE fine-tuning and descriptor extraction, install [MACE](https://github.com/ACEsuit/mace) and a PyTorch build that matches your CUDA setup (see the MACE repository for current install instructions). A GPU is strongly recommended for fine-tuning and for running `mace_features.py`.
+
+Training hyperparameters live in `Mace.toml`. By default, Weights & Biases logging is enabled (`wandb = true`); set `wandb = false` in that file if you do not use W&B.
+
+### MACE-specific files
+
+| Path | Role |
+|------|------|
+| `datasplit/train_{split}.xyz`, `datasplit/test_{split}.xyz` | ASE structures and `log_klat` labels for each split (`random_split`, `space_group_split`, `ood_split`) |
+| `Mace.toml` | Fine-tuning configuration (learning rate, architecture, `energy_key = "log_klat"`, etc.) |
+| `Mace_run_train.py` | Wrapper around upstream MACE training; reads `Mace.toml` and wires train/validation xyz paths |
+| `mace_omat/*_mace_descriptors_{train,test}.pkl` | Precomputed MACE-OMat atom descriptors (Git LFS) |
+| `mace_features.py` | Example script to recompute descriptors with the MACE-MP foundation model (`medium-mpa-0`) into `mace_mpa/` |
+| `Mace_feat_pred.ipynb` | Loads descriptors, mean-pools over atoms, fits `LinearRegression`, reports MAE / R² and κ-WLMAE |
+
+### Fine-tune MACE on a split
+
+`Mace_run_train.py` expects `--file_name` to match the split name used in the xyz filenames under `datasplit/`. Validation uses the corresponding `test_{split}.xyz`.
+
+```bash
+# Random 80/20 baseline
+python Mace_run_train.py --cfg Mace.toml --file_name random_split --root_dir ./datasplit/
+
+# Space-group disjoint split
+python Mace_run_train.py --cfg Mace.toml --file_name space_group_split --root_dir ./datasplit/
+
+# Out-of-distribution (low-κ) split
+python Mace_run_train.py --cfg Mace.toml --file_name ood_split --root_dir ./datasplit/
+```
+
+Checkpoints and logs are written under the directories named in `Mace.toml` (`chkpt/`, `logs/`, etc.). When training finishes, MACE saves a compiled model named `{split}_compiled.model` in the working directory (for example `random_split_compiled.model`).
+
+### Descriptor baseline (MACE-OMat + linear regression)
+
+1. Ensure `git lfs pull` has populated `mace_omat/`.
+2. Open `Mace_feat_pred.ipynb`.
+3. Set the `split` variable to one of `random_split`, `space_group_split`, or `ood_split`.
+4. Run all cells: descriptors are mean-pooled per structure, a linear model is fit on the training set, and metrics are computed on the test set.
+
+To regenerate descriptors with the **MACE-MP** potential instead of using the bundled OMat files, edit the `split` variable at the top of `mace_features.py` and run:
+
+```bash
+python mace_features.py
+```
+
+Outputs are written to `mace_mpa/` (created automatically). That step is compute-heavy because descriptors are evaluated structure-by-structure.
 
 ## Output Files
 
