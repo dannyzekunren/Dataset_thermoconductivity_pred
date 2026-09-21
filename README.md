@@ -21,20 +21,7 @@ Install the dataset dependencies:
 pip install -r requirements.txt
 ```
 
-For MACE descriptor extraction, install [MACE](https://github.com/ACEsuit/mace) and a PyTorch build that matches your CUDA setup (see the MACE repository for current install instructions). A GPU is strongly recommended for fine-tuning and for running `mace_features.py`.
-
-```bash
-# Random 80/20 baseline
-python Mace_run_train.py --cfg Mace.toml --file_name random_split --root_dir ./datasplit/
-
-# Space-group disjoint split
-python Mace_run_train.py --cfg Mace.toml --file_name space_group_split --root_dir ./datasplit/
-
-# Out-of-distribution (low-κ) split
-python Mace_run_train.py --cfg Mace.toml --file_name ood_split --root_dir ./datasplit/
-```
-
-Checkpoints and logs are written under the directories named in `Mace.toml` (`chkpt/`, `logs/`, etc.). When training finishes, MACE saves a compiled model named `{split}_compiled.model` in the working directory (for example `random_split_compiled.model`).
+For MACE descriptor extraction, install [MACE](https://github.com/ACEsuit/mace) and a PyTorch build that matches your CUDA setup (see the MACE repository for current install instructions). A GPU is strongly recommended for running `mace_features.py`.
 
 ### Descriptor baseline (MACE-OMat + linear regression)
 
