@@ -1,0 +1,42 @@
+cff-version: 1.2.0
+message: "If you use this dataset, please cite this record and the source papers listed in README.md."
+title: "Thermal Conductivity Dataset and Surrogate Models"
+type: dataset
+abstract: "Curated train/test splits for lattice thermal conductivity prediction, constructed from Materials Project and Phonix data, with scripts and figures for reproducible analysis."
+authors:
+  - family-names: Wang
+    given-names: Zeyu
+  - family-names: Yamazaki
+    given-names: Shuya
+  - family-names: Petersen
+    given-names: Martin Hoffmann
+  - family-names: Ohnishi
+    given-names: Masato
+  - family-names: Yamamoto
+    given-names: Tomiya
+  - family-names: Nong
+    given-names: Wei
+  - family-names: Wang
+    given-names: Jianghai
+  - family-names: Zhu
+    given-names: Ruiming
+  - family-names: Hanai
+    given-names: Masatoshi
+  - family-names: Morita
+    given-names: Michimasa
+  - family-names: Suzumura
+    given-names: Toyotaro
+  - family-names: Ren
+    given-names: Zekun
+  - family-names: Shiomi
+    given-names: Junichiro
+  - family-names: Hippalgaonkar
+    given-names: Kedar
+version: 1.0.0
+license: CC-BY-4.0
+repository-code: "https://github.com/dannyzekunren/Dataset_thermoconductivity_pred"
+keywords:
+  - lattice thermal conductivity
+  - materials informatics
+  - surrogate models
+  - benchmark dataset
