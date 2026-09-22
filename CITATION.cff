@@ -33,6 +33,8 @@ authors:
   - family-names: Hippalgaonkar
     given-names: Kedar
 version: 1.0.0
+date-released: "2026-09-22"
+doi: 10.5281/zenodo.22894537
 license: CC-BY-4.0
 repository-code: "https://github.com/dannyzekunren/Dataset_thermoconductivity_pred"
 keywords:
