@@ -1,5 +1,7 @@
 # Thermal Conductivity Dataset and Surrogate Models
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22894536.svg)](https://doi.org/10.5281/zenodo.22894536)
+
 This repository provides curated train/test splits for lattice thermal conductivity prediction, constructed from Materials Project and [Phonix](https://huggingface.co/phonix-db) data, together with resources for training and evaluating surrogate models for thermal conductivity prediction. 
 
 ## Overview
@@ -221,6 +223,8 @@ def kappa_wlmae(y_true, y_pred, p=2, log_base='e', eps=1e-12):
 - Additional properties require MP API key
 
 ## Citation
+
+To cite the archived dataset, use the [v1.0.0 Zenodo record](https://doi.org/10.5281/zenodo.22894537). The [concept DOI](https://doi.org/10.5281/zenodo.22894536) links to all versions.
 
 If you use this dataset or the surrogate models in your work, please consider citing the following papers:
 
